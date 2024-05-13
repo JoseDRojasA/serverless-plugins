@@ -1,11 +1,17 @@
 const {Writable} = require('stream');
 const {spawn} = require('child_process');
 const onExit = require('signal-exit');
-const {SQS} = require('aws-sdk');
+const {
+  SQSClient,
+  SendMessageCommand,
+  SendMessageBatchCommand,
+  GetQueueUrlCommand,
+  DeleteQueueCommand
+} = require('@aws-sdk/client-sqs');
 const pump = require('pump');
 const {getSplitLinesTransform} = require('./utils');
 
-const client = new SQS({
+const client = new SQSClient({
   region: 'eu-west-1',
   accessKeyId: 'local',
   secretAccessKey: 'local',
@@ -14,25 +20,19 @@ const client = new SQS({
 
 const sendMessages = () => {
   return Promise.all([
-    client
-      .sendMessage({
-        QueueUrl: 'http://localhost:9324/queue/AutocreatedImplicitQueue',
-        MessageBody: 'AutocreatedImplicitQueue'
-      })
-      .promise(),
-    client
-      .sendMessage({
-        QueueUrl: 'http://localhost:9324/queue/AutocreatedQueue',
-        MessageBody: 'AutocreatedQueue'
-      })
-      .promise(),
-    client
-      .sendMessage({
-        QueueUrl: 'http://localhost:9324/queue/AutocreatedFifoQueue.fifo',
-        MessageBody: 'AutocreatedFifoQueue',
-        MessageGroupId: '1'
-      })
-      .promise()
+    client.send(new SendMessageCommand({
+      QueueUrl: 'http://localhost:9324/queue/AutocreatedImplicitQueue',
+      MessageBody: 'AutocreatedImplicitQueue'
+    })),
+    client.send(new SendMessageCommand({
+      QueueUrl: 'http://localhost:9324/queue/AutocreatedQueue',
+      MessageBody: 'AutocreatedQueue',
+    })),
+    client.send(new SendMessageCommand({
+      QueueUrl: 'http://localhost:9324/queue/AutocreatedFifoQueue.fifo',
+      MessageBody: 'AutocreatedFifoQueue',
+      MessageGroupId: '1',
+    })),
   ]);
 };
 
@@ -67,14 +67,13 @@ pump(
 );
 
 async function pruneQueue(QueueName) {
-  const {QueueUrl} = await client
-    .getQueueUrl({QueueName})
-    .promise()
-    .catch(err => {
+  const {QueueUrl} = await client.send(new GetQueueUrlCommand({
+    QueueName
+  })).catch(err => {
       console.log(`Ignore issue that occured pruning ${QueueName}: ${err.message}`);
       return {QueueUrl: null};
     });
-  if (QueueUrl) await client.deleteQueue({QueueUrl}).promise();
+  if (QueueUrl) await client.send(new DeleteQueueCommand({QueueUrl}));
 }
 
 async function cleanUp() {

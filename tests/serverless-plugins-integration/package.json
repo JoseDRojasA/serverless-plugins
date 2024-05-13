@@ -21,6 +21,7 @@
     "test:sqs:autocreate": "node test-sqs-autocreate"
   },
   "dependencies": {
+    "@aws-sdk/client-sqs": "^3.574.0",
     "aws-sdk": "^2.1234.0",
     "lodash": "^4.17.21",
     "minio": "^7.0.32",

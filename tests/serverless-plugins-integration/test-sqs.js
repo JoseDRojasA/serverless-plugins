@@ -1,12 +1,16 @@
 const {Writable} = require('stream');
 const {spawn} = require('child_process');
 const onExit = require('signal-exit');
-const {SQS} = require('aws-sdk');
+const {
+  SQSClient,
+  SendMessageCommand,
+  SendMessageBatchCommand
+} = require('@aws-sdk/client-sqs');
 const {chunk} = require('lodash/fp');
 const pump = require('pump');
 const {getSplitLinesTransform} = require('./utils');
 
-const client = new SQS({
+const client = new SQSClient({
   region: 'eu-west-1',
   accessKeyId: 'local',
   secretAccessKey: 'local',
@@ -15,33 +19,33 @@ const client = new SQS({
 
 const sendMessages = () => {
   return Promise.all([
-    client
-      .sendMessage({
+    client.send(
+      new SendMessageCommand({
         QueueUrl: 'http://localhost:9324/queue/MyFirstQueue',
         MessageBody: 'MyFirstMessage',
         MessageAttributes: {
           myAttribute: {DataType: 'String', StringValue: 'myAttribute'}
         }
       })
-      .promise(),
-    client
-      .sendMessage({
+    ),
+    client.send(
+      new SendMessageCommand({
         QueueUrl: 'http://localhost:9324/queue/MySecondQueue',
         MessageBody: 'MySecondMessage'
       })
-      .promise(),
-    client
-      .sendMessage({
+    ),
+    client.send(
+      new SendMessageCommand({
         QueueUrl: 'http://localhost:9324/queue/MyThirdQueue',
         MessageBody: 'MyThirdMessage'
       })
-      .promise(),
-    client
-      .sendMessage({
+    ),
+    client.send(
+      new SendMessageCommand({
         QueueUrl: 'http://localhost:9324/queue/MyFourthQueue',
         MessageBody: 'MyFourthMessage'
       })
-      .promise(),
+    ),
     ...chunk(
       10,
       Array.from({length: 70}).map((_, Id) => ({
@@ -49,12 +53,10 @@ const sendMessages = () => {
         MessageBody: 'MyLargestBatchSizeQueue'
       }))
     ).map(Entries =>
-      client
-        .sendMessageBatch({
-          QueueUrl: 'http://localhost:9324/queue/MyLargestBatchSizeQueue',
-          Entries
-        })
-        .promise()
+      client.send(new SendMessageBatchCommand({
+        QueueUrl: 'http://localhost:9324/queue/MyLargestBatchSizeQueue',
+        Entries
+      }))
     )
   ]);
 };
