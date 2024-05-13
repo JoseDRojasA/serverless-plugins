@@ -4,7 +4,6 @@ const onExit = require('signal-exit');
 const {
   SQSClient,
   SendMessageCommand,
-  SendMessageBatchCommand,
   GetQueueUrlCommand,
   DeleteQueueCommand
 } = require('@aws-sdk/client-sqs');
@@ -20,19 +19,25 @@ const client = new SQSClient({
 
 const sendMessages = () => {
   return Promise.all([
-    client.send(new SendMessageCommand({
-      QueueUrl: 'http://localhost:9324/queue/AutocreatedImplicitQueue',
-      MessageBody: 'AutocreatedImplicitQueue'
-    })),
-    client.send(new SendMessageCommand({
-      QueueUrl: 'http://localhost:9324/queue/AutocreatedQueue',
-      MessageBody: 'AutocreatedQueue',
-    })),
-    client.send(new SendMessageCommand({
-      QueueUrl: 'http://localhost:9324/queue/AutocreatedFifoQueue.fifo',
-      MessageBody: 'AutocreatedFifoQueue',
-      MessageGroupId: '1',
-    })),
+    client.send(
+      new SendMessageCommand({
+        QueueUrl: 'http://localhost:9324/queue/AutocreatedImplicitQueue',
+        MessageBody: 'AutocreatedImplicitQueue'
+      })
+    ),
+    client.send(
+      new SendMessageCommand({
+        QueueUrl: 'http://localhost:9324/queue/AutocreatedQueue',
+        MessageBody: 'AutocreatedQueue'
+      })
+    ),
+    client.send(
+      new SendMessageCommand({
+        QueueUrl: 'http://localhost:9324/queue/AutocreatedFifoQueue.fifo',
+        MessageBody: 'AutocreatedFifoQueue',
+        MessageGroupId: '1'
+      })
+    )
   ]);
 };
 
@@ -67,9 +72,13 @@ pump(
 );
 
 async function pruneQueue(QueueName) {
-  const {QueueUrl} = await client.send(new GetQueueUrlCommand({
-    QueueName
-  })).catch(err => {
+  const {QueueUrl} = await client
+    .send(
+      new GetQueueUrlCommand({
+        QueueName
+      })
+    )
+    .catch(err => {
       console.log(`Ignore issue that occured pruning ${QueueName}: ${err.message}`);
       return {QueueUrl: null};
     });

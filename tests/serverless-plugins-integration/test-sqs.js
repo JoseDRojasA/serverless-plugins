@@ -1,11 +1,7 @@
 const {Writable} = require('stream');
 const {spawn} = require('child_process');
 const onExit = require('signal-exit');
-const {
-  SQSClient,
-  SendMessageCommand,
-  SendMessageBatchCommand
-} = require('@aws-sdk/client-sqs');
+const {SQSClient, SendMessageCommand, SendMessageBatchCommand} = require('@aws-sdk/client-sqs');
 const {chunk} = require('lodash/fp');
 const pump = require('pump');
 const {getSplitLinesTransform} = require('./utils');
@@ -53,10 +49,12 @@ const sendMessages = () => {
         MessageBody: 'MyLargestBatchSizeQueue'
       }))
     ).map(Entries =>
-      client.send(new SendMessageBatchCommand({
-        QueueUrl: 'http://localhost:9324/queue/MyLargestBatchSizeQueue',
-        Entries
-      }))
+      client.send(
+        new SendMessageBatchCommand({
+          QueueUrl: 'http://localhost:9324/queue/MyLargestBatchSizeQueue',
+          Entries
+        })
+      )
     )
   ]);
 };
