@@ -1,4 +1,10 @@
-const SQSClient = require('aws-sdk/clients/sqs');
+const {
+  SQSClient,
+  GetQueueUrlCommand,
+  ReceiveMessageCommand,
+  DeleteMessageBatchCommand,
+  CreateQueueCommand
+} = require('@aws-sdk/client-sqs');
 
 const {
   chunk,
@@ -74,7 +80,8 @@ class SQS {
 
   async _getQueueUrl(queueName) {
     try {
-      return await this.client.getQueueUrl({QueueName: queueName}).promise();
+      const {QueueUrl} = await this.client.send(new GetQueueUrlCommand({QueueName: queueName}));
+      return QueueUrl;
     } catch (err) {
       await delay(10000);
       return this._getQueueUrl(queueName);
@@ -87,23 +94,19 @@ class SQS {
     if (!enabled) return;
 
     if (this.options.autoCreate) await this._createQueue(sqsEvent);
-
-    const QueueUrl = this._rewriteQueueUrl(
-      (await this.client.getQueueUrl({QueueName: queueName}).promise()).QueueUrl
-    );
+    const {QueueUrl} = await this.client.send(new GetQueueUrlCommand({QueueName: queueName}));
 
     const getMessages = async (size, messages = []) => {
       if (size <= 0) return messages;
 
-      const {Messages} = await this.client
-        .receiveMessage({
+      const {Messages} = await this.client.send(
+        new ReceiveMessageCommand({
           QueueUrl,
           MaxNumberOfMessages: size > 10 ? 10 : size,
-          AttributeNames: ['All'],
           MessageAttributeNames: ['All'],
           WaitTimeSeconds: 5
         })
-        .promise();
+      );
 
       if (!Messages || Messages.length === 0) return messages;
       return getMessages(size - Messages.length, [...messages, ...Messages]);
@@ -128,14 +131,7 @@ class SQS {
                 Id,
                 ReceiptHandle
               }))
-            ).map(Entries =>
-              this.client
-                .deleteMessageBatch({
-                  Entries,
-                  QueueUrl
-                })
-                .promise()
-            )
+            ).map(Entries => this.client.send(new DeleteMessageBatchCommand({Entries, QueueUrl})))
           );
         } catch (err) {
           log.warning(err.stack);
@@ -158,15 +154,15 @@ class SQS {
   async _createQueue({queueName}, remainingTry = 5) {
     try {
       const properties = this._getResourceProperties(queueName);
-      await this.client
-        .createQueue({
+      await this.client.send(
+        new CreateQueueCommand({
           QueueName: queueName,
           Attributes: mapValues(
             value => (isPlainObject(value) ? JSON.stringify(value) : toString(value)),
             properties
           )
         })
-        .promise();
+      );
     } catch (err) {
       if (remainingTry > 0 && err.name === 'AWS.SimpleQueueService.NonExistentQueue')
         return this._createQueue({queueName}, remainingTry - 1);
