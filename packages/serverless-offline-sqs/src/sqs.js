@@ -154,17 +154,16 @@ class SQS {
   async _createQueue({queueName}, remainingTry = 5) {
     try {
       const properties = this._getResourceProperties(queueName);
-      await this.client.send(
-        new CreateQueueCommand({
-          QueueName: queueName,
-          Attributes: mapValues(
-            value => (isPlainObject(value) ? JSON.stringify(value) : toString(value)),
-            properties
-          )
-        })
-      );
+      const command = new CreateQueueCommand({
+        QueueName: queueName,
+        Attributes: mapValues(
+          value => (isPlainObject(value) ? JSON.stringify(value) : toString(value)),
+          properties
+        )
+      });
+      await this.client.send(command);
     } catch (err) {
-      if (remainingTry > 0 && err.name === 'AWS.SimpleQueueService.NonExistentQueue')
+      if (remainingTry > 0 && err.name === 'QueueDoesNotExist')
         return this._createQueue({queueName}, remainingTry - 1);
       log.warning(err.stack);
     }

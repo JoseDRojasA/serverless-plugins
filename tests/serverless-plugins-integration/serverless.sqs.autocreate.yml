@@ -15,13 +15,11 @@ functions:
     events:
       - sqs: arn:aws:sqs:region:XXXXXX:AutocreatedImplicitQueue
       - sqs:
-          queueName: AutocreatedQueue
           arn:
             Fn::GetAtt:
               - AutocreatedQueue
               - Arn
       - sqs:
-          queueName: AutocreatedFifoQueue.fifo
           arn:
             Fn::GetAtt:
               - AutocreatedFifoQueue
