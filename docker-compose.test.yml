@@ -55,6 +55,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=local
       - AWS_DEFAULT_REGION=eu-west-1
       - AWS_ENDPOINT_URL=http://kinesis:4567
+
   s3:
     image: minio/minio:latest
     command: server /data
@@ -67,7 +68,6 @@ services:
       - MINIO_SECRET_KEY=locallocal
       - AWS_DEFAULT_REGION=eu-west-1
       - AWS_ENDPOINT_URL=http://s3:9000
-
   s3-create:
     image: amazon/aws-cli:latest
     links:
