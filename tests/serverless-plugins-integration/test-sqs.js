@@ -76,8 +76,7 @@ pump(
 
       this.count =
         (this.count || 0) +
-        (line.match(/\(λ: .*\) RequestId: .* Duration: .* ms {2}Billed Duration: .* ms/g) || [])
-          .length;
+        (line.match(/.*RequestId: .* Duration: .* ms {2}Billed Duration: .* ms/g) || []).length;
 
       if (this.count === 5) serverless.kill();
       cb();
