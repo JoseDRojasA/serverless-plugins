@@ -70,13 +70,19 @@ pump(
   new Writable({
     objectMode: true,
     write(line, enc, cb) {
+      console.log(line.toString());
       if (/Starting Offline SQS/.test(line)) {
-        sendMessages();
+        sendMessages()
+          .then(() => console.log('sucessfully send messages'))
+          .catch(err => {
+            console.log('Some issue sending message:s', err.message);
+          });
       }
 
       this.count =
         (this.count || 0) +
-        (line.match(/.*RequestId: .* Duration: .* ms {2}Billed Duration: .* ms/g) || []).length;
+        (line.match(/\(λ: .*\) RequestId: .* Duration: .* ms {2}Billed Duration: .* ms/g) || [])
+          .length;
 
       if (this.count === 5) serverless.kill();
       cb();
