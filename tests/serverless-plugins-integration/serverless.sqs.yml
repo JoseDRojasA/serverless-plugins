@@ -20,7 +20,6 @@ functions:
     handler: lambda/handler.callback
     events:
       - sqs:
-          queueName: MyThirdQueue
           arn:
             Fn::GetAtt:
               - MyThirdQueue
@@ -29,7 +28,6 @@ functions:
     handler: lambda/handler.callback
     events:
       - sqs:
-          queueName: MyLargestBatchSizeQueue
           batchSize: 70
           arn:
             Fn::GetAtt:
@@ -47,6 +45,18 @@ functions:
 
 resources:
   Resources:
+    MyFirstQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: MyFirstQueue
+    MySecondQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: MySecondQueue
+    MyThirdQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: MyThirdQueue
     MyFourthQueue:
       Type: AWS::SQS::Queue
       Properties:
